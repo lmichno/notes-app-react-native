@@ -1,57 +1,68 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
-import { TextInput, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Picker } from '@react-native-picker/picker';
-import { useFocusEffect } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 
-const AddPage = () => {
+const EditPage = ({ navigation }) => {
+    const route = useRoute();
+    const { noteKey } = route.params;
+
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [date, setDate] = useState('');
     const [category, setCategory] = useState('');
     const [categories, setCategories] = useState([]);
 
-    useFocusEffect(
-        React.useCallback(() => {
-            fetchCategories();
-        }, [])
-    );
+    const fetchNote = async () => {
+        try {
+            const noteString = await SecureStore.getItemAsync(noteKey);
+
+            if (noteString) {
+                const note = JSON.parse(noteString);
+                setTitle(note.title);
+                setContent(note.content);
+                setDate(note.date);
+                setCategory(note.category);
+            }
+        } catch (error) {
+            console.error('Error fetching note:', error);
+        }
+    };
 
     const fetchCategories = async () => {
         const catsString = await SecureStore.getItemAsync('cat');
         if (catsString) {
             const cats = JSON.parse(catsString);
             setCategories(cats.cats);
-            setCategory(cats.cats[0]);
         }
     };
+
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchNote();
+            fetchCategories();
+        }, [noteKey])
+    );
+
     const handleAddNote = async () => {
         const note = {
-            date: new Date().toLocaleString('pl-PL', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }),
+            date: date,
             title,
             content,
             category
         };
         const noteString = JSON.stringify(note);
-        let numOfNotes = await SecureStore.getItemAsync('0');
-        numOfNotes = parseInt(numOfNotes) + 1;
-        await SecureStore.setItemAsync(numOfNotes.toString(), noteString);
-        await SecureStore.setItemAsync('0', numOfNotes.toString());
+        await SecureStore.setItemAsync(noteKey, noteString);
         setTitle('');
         setContent('');
         setCategory('');
+        navigation.navigate('Notes');
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Add a New Note</Text>
+            <Text style={styles.title}>Edit a Note</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Title"
@@ -74,7 +85,7 @@ const AddPage = () => {
                     <Picker.Item key={index} label={cat} value={cat} />
                 ))}
             </Picker>
-            <Button title="Add Note" onPress={handleAddNote} />
+            <Button title="Submit" onPress={handleAddNote} />
         </View>
     );
 };
@@ -111,4 +122,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default AddPage;
+export default EditPage;
