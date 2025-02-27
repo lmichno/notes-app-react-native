@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 const InfoPage = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Info Page</Text>
+            <Text style={styles.title}>Notes App v2.0</Text>
         </View>
     );
 };
